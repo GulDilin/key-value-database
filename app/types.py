@@ -1,6 +1,6 @@
 from datetime import datetime
 from enum import Enum
-from typing import Any
+from typing import Any, Callable
 
 from pydantic import BaseModel
 
@@ -27,7 +27,10 @@ class DbType(StrEnum):
     STR = "str"
 
 
-INT_SIZE = 32
+DB_TYPES_CONVERTERS: dict[DbType, Callable] = {
+    DbType.INT: int,
+    DbType.STR: str,
+}
 
 
 class MetaDB(BaseModel):
@@ -57,10 +60,14 @@ class MetaTable(BaseModel):
         return self.prev_table_offset > 0
 
 
+class Row(BaseModel):
+    data: dict
+
+
 class MetaRow(BaseModel):
     data: dict
-    next_row_offset: int
-    prev_row_offset: int
+    next_row_offset: int = 0
+    prev_row_offset: int = 0
 
     def has_next(self):
         return self.next_row_offset > 0
