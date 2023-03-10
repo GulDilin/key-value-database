@@ -24,29 +24,42 @@ def test_create_db_table(db: Database):
     tables = db.get_all_tables()
     assert tables == []
 
-    table = types.Table(
+    table = types.TableCreate(
         name=f"Test Table {uuid.uuid4()}",
         keys={'id': types.DbType.STR, 'content': types.DbType.INT},
     )
-    table2 = types.Table(
+    table2 = types.TableCreate(
         name=f"Test Table {uuid.uuid4()}",
         keys={'idx': types.DbType.STR, 'contentx': types.DbType.INT, 'column': types.DbType.INT},
     )
     db.create_table(table)
     db.create_table(table2)
     tables = db.get_all_tables()
-    assert tables == [table, table2]
+    tables_actual = [
+        types.TableCreate.parse_obj(t.dict())
+        for t in tables
+    ]
+    tables_expected = [table, table2]
+    assert tables_actual == tables_expected
     tables = db.get_all_tables()
-    assert tables == [table, table2]
+    tables_actual = [
+        types.TableCreate.parse_obj(t.dict())
+        for t in tables
+    ]
+    assert tables_actual == tables_expected
 
     tables = []
     for t in db.get_tables_iterator():
         tables.append(t)
-    assert tables == [table, table2]
+    tables_actual = [
+        types.TableCreate.parse_obj(t.dict())
+        for t in tables
+    ]
+    assert tables_actual == tables_expected
 
 
 def test_insert_row(db: Database):
-    table = types.Table(
+    table = types.TableCreate(
         name=f"Test Table {uuid.uuid4()}",
         keys={'id': types.DbType.STR, 'content': types.DbType.INT},
     )
@@ -65,7 +78,7 @@ def test_insert_row(db: Database):
 
 
 def test_filter_row(db: Database):
-    table = types.Table(
+    table = types.TableCreate(
         name=f"Test Table {uuid.uuid4()}",
         keys={'id': types.DbType.STR, 'content': types.DbType.INT},
     )

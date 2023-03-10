@@ -37,6 +37,7 @@ def test_write_db_table(cursor: DatabaseCursor):
     table = types.MetaTable(
         name=f"Test Table {uuid.uuid4()}",
         keys={'id': types.DbType.STR, 'content': types.DbType.INT},
+        indexes=[]
     )
     cursor.write_table_meta(table)
     assert table.name in cursor.tables
@@ -61,10 +62,12 @@ def test_write_2_db_tables(cursor: DatabaseCursor):
     table = types.MetaTable(
         name=f"Test Table {uuid.uuid4()}",
         keys={'id': types.DbType.STR, 'content': types.DbType.INT},
+        indexes=[]
     )
     table2 = types.MetaTable(
         name=f"Test Table {uuid.uuid4()}",
         keys={'idx': types.DbType.STR, 'contentx': types.DbType.INT, 'column': types.DbType.INT},
+        indexes=[]
     )
     cursor.write_table_meta(table)
     cursor.write_table_meta(table2)
@@ -85,6 +88,7 @@ def test_write_row(cursor: DatabaseCursor):
     table = types.MetaTable(
         name=f"Test Table {uuid.uuid4()}",
         keys={'id': types.DbType.STR, 'content': types.DbType.INT},
+        indexes=[]
     )
     cursor.write_table_meta(table)
 
@@ -100,6 +104,7 @@ def test_write_2_row(cursor: DatabaseCursor):
     table = types.MetaTable(
         name=f"Test Table {uuid.uuid4()}",
         keys={'id': types.DbType.STR, 'content': types.DbType.INT},
+        indexes=[]
     )
     cursor.write_table_meta(table)
 

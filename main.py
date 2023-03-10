@@ -17,6 +17,7 @@ def main():
             msg = input('$> ')
             parser.exec_cmd(msg)
         except KeyboardInterrupt:
+            database.indexer.save()
             break
 
 

@@ -85,4 +85,5 @@ venv.bak/
 
 # Project specific
 *.db-lab
+*.db-lab.index.json
 pyrightconfig.json

@@ -51,6 +51,7 @@ class MetaKey(BaseModel):
 class MetaTable(BaseModel):
     name: str
     keys: dict[str, DbType]
+    indexes: list[str]
     first_row_offset: int = 0
     last_row_offset: int = 0
     next_table_offset: int = 0
@@ -75,9 +76,15 @@ class MetaRow(BaseModel):
         return self.prev_row_offset > 0
 
 
+class TableCreate(BaseModel):
+    name: str
+    keys: dict[str, DbType]
+
+
 class Table(BaseModel):
     name: str
     keys: dict[str, DbType]
+    indexes: list[str]
 
 
 class Row(BaseModel):

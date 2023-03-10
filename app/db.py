@@ -3,6 +3,7 @@ from typing import Generator
 
 from . import types
 from .cursor import DatabaseCursor
+from .indexer import Indexer
 
 
 @dataclass
@@ -11,12 +12,21 @@ class Database:
 
     def __post_init__(self):
         self.cursor = DatabaseCursor(self.db_file)
+        self.indexer = Indexer(cursor=self.cursor)
+        try:
+            self.indexer.load()
+        except Exception:
+            print('Load indexes failed. Build indexes')
+            for table in self.cursor.read_all_tables():
+                self.indexer.build_for_table(table[0].name)
+            print('Indexes created')
 
     @staticmethod
     def _meta_table_to_table(meta_table: types.MetaTable) -> types.Table:
         return types.Table(
             name=meta_table.name,
             keys=meta_table.keys,
+            indexes=meta_table.indexes,
         )
 
     @staticmethod
@@ -46,12 +56,25 @@ class Database:
             meta_table = self.cursor.read_table_meta(meta_table.next_table_offset)
             yield self._meta_table_to_table(meta_table)
 
-    def create_table(self, table: types.Table) -> None:
+    def create_table(self, table: types.TableCreate) -> None:
         meta_table = types.MetaTable(
             name=table.name,
             keys=table.keys,
+            indexes=[]
         )
         self.cursor.write_table_meta(meta_table)
+        self.indexer.build_for_table(table.name)
+
+    def create_table_index(self, table_name: str, index_key: str) -> None:
+        table = self.cursor.get_table_by_name(table_name)
+        if index_key not in table.keys:
+            raise ValueError(f'Key {index_key} does not found in table {table_name}')
+        if index_key in table.indexes:
+            raise ValueError(f'Index for key {index_key} already exists in table {table_name}')
+        table_copy = table.copy()
+        table_copy.indexes.append(index_key)
+        self.cursor.override_table_meta(table_copy, override_table=table_name)
+        self.indexer.build_for_table_key(table_name, index_key)
 
     def convert_filter_part(
         self, table: types.MetaTable, filter_part: types.FilterPart,
@@ -93,7 +116,6 @@ class Database:
     def is_row_fit_filter_part(
         self, meta_row: types.MetaRow, filter_part: types.FilterPart,
     ) -> bool:
-        print(f'{filter_part=}')
         for key, val in filter_part.items():
             if not self.is_row_fit_filter_val(meta_row, key, val):
                 return False
@@ -108,7 +130,7 @@ class Database:
             for part in filter_:
                 if self.is_row_fit_filter_part(meta_row, part):
                     return True
-            return True
+            return False
         return self.is_row_fit_filter_part(meta_row, filter_)
 
     def get_rows_iterator(
@@ -118,19 +140,24 @@ class Database:
     ) -> Generator[types.Row, None, None]:
         meta_table = self.cursor.get_table_by_name(table_name)
         filter_copy = self.convert_filter(meta_table, filter_ or dict())
-        if meta_table.has_next():
-            return
-        meta_row = self.cursor.read_row_meta(
-            meta_table.first_row_offset
-        )
-        if self.is_row_fit_filter(meta_row, filter_copy):
-            yield self._meta_row_to_row(meta_row)
-        while meta_row.has_next():
-            meta_row = self.cursor.read_row_meta(meta_row.next_row_offset)
+        offset = meta_table.first_row_offset
+        while offset:
+            meta_row = self.cursor.read_row_meta(offset)
+            offset = meta_row.next_row_offset
             if not self.is_row_fit_filter(meta_row, filter_copy):
                 continue
             yield self._meta_row_to_row(meta_row)
 
+    def get_rows_iterator_use_indexes(
+        self,
+        table_name: str,
+        filter_: types.Filter,
+    ) -> Generator[types.Row, None, None]:
+        for meta_row in self.indexer.get_rows_iterator_use_indexes(table_name, filter_):
+            yield self._meta_row_to_row(meta_row)
+
     def insert_row(self, table_name: str, row: types.Row) -> None:
+        meta_table = self.cursor.get_table_by_name(table_name)
         meta_row = types.MetaRow(data=row.data)
-        self.cursor.write_row_meta(table_name, meta_row)
+        meta_row, offset = self.cursor.write_row_meta(table_name, meta_row)
+        self.indexer.add_item(meta_table, meta_row, offset)

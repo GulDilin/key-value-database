@@ -266,7 +266,7 @@ class DatabaseCursor:
             updated_table.last_row_offset = offset
             self.override_table_meta(updated_table, updated_table.name)
 
-    def write_row_meta(self, table_name: str, row: types.MetaRow) -> None:
+    def write_row_meta(self, table_name: str, row: types.MetaRow) -> tuple[types.MetaRow, int]:
         table = self.get_table_by_name(table_name)
         row = self.preprocess_row_data(table, row)
         row.next_row_offset = 0
@@ -284,3 +284,5 @@ class DatabaseCursor:
             updated_table.first_row_offset = offset
         updated_table.last_row_offset = offset
         self.override_table_meta(updated_table, updated_table.name)
+
+        return row, offset
