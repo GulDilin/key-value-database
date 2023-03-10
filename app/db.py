@@ -69,23 +69,19 @@ class Database:
         return filter_part_copy
 
     def convert_filter(
-        self, meta_table: types.MetaTable, filter_: types.FilterRequest,
-    ) -> types.FilterRequest:
-        if isinstance(filter_.filter_data, list):
-            filter_copy = [
+        self, meta_table: types.MetaTable, filter_: types.Filter,
+    ) -> types.Filter:
+        if isinstance(filter_, list):
+            return [
                 self.convert_filter_part(meta_table, filter_part)
-                for filter_part in filter_.filter_data
+                for filter_part in filter_
             ]
-            return types.FilterRequest(filter_data=filter_copy)
         else:
-            return types.FilterRequest(
-                filter_data=self.convert_filter_part(meta_table, filter_.filter_data)
-            )
+            return self.convert_filter_part(meta_table, filter_)
 
     def is_row_fit_filter_val(
         self, meta_row: types.MetaRow, key: str, val: types.FilterValue
     ) -> bool:
-        print(f'{meta_row.data=} {key=} {val=}')
         if isinstance(val, list):
             for v in val:
                 if meta_row.data[key] == v:
@@ -104,16 +100,16 @@ class Database:
         return True
 
     def is_row_fit_filter(
-        self, meta_row: types.MetaRow, filter_: types.FilterRequest,
+        self, meta_row: types.MetaRow, filter_: types.Filter,
     ) -> bool:
-        if len(filter_.filter_data) == 0:
+        if len(filter_) == 0:
             return True
-        if isinstance(filter_.filter_data, list):
-            for part in filter_.filter_data:
+        if isinstance(filter_, list):
+            for part in filter_:
                 if self.is_row_fit_filter_part(meta_row, part):
                     return True
             return True
-        return self.is_row_fit_filter_part(meta_row, filter_.filter_data)
+        return self.is_row_fit_filter_part(meta_row, filter_)
 
     def get_rows_iterator(
         self,
@@ -121,7 +117,7 @@ class Database:
         filter_: types.Filter | None = None,
     ) -> Generator[types.Row, None, None]:
         meta_table = self.cursor.get_table_by_name(table_name)
-        filter_copy = self.convert_filter(meta_table, types.FilterRequest(filter_data=filter_ or dict()))
+        filter_copy = self.convert_filter(meta_table, filter_ or dict())
         if meta_table.has_next():
             return
         meta_row = self.cursor.read_row_meta(

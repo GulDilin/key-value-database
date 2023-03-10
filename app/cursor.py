@@ -158,6 +158,8 @@ class DatabaseCursor:
         old_meta, offset = self.tables[override_table]
         if table.name != old_meta.name and self.has_table(table.name):
             raise ValueError('Table name need to be unique')
+        if len(table.keys) == 0:
+            raise ValueError('Table cannot has empty keys')
         _, table_meta_size = self._encode_meta(table)
         if table_meta_size < self._META_BUFFER_SIZE:
             self._write_meta(table, self.tables[table.name][1], use_buffer=True)
@@ -187,6 +189,8 @@ class DatabaseCursor:
     def write_table_meta(self, table: types.MetaTable):
         if self.has_table(table.name):
             raise ValueError('Table name need to be unique')
+        if len(table.keys) == 0:
+            raise ValueError('Table cannot have empty keys')
         offset = self._get_current_offset()
         self._write_meta(table, offset, use_buffer=True)
         self.update_table_dict(table, offset)

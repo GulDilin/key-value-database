@@ -27,3 +27,24 @@ example `C:\Program Files\Python3.10`)
 ```shell
 pytest .
 ```
+
+## Use db shell
+```
+python main.py
+
+create-table { "name": "Test", "keys": { "id": "int", "content": "str" } }
+create-table { "name": "Cats", "keys": { "name": "str", "age": "int", "owner": "str" } }
+
+insert -t;Cats;-d;{"name":"Kitty","age":2,"owner":"Lilly"}
+insert -t;Cats;-d;{"name":"MurMur","age":3,"owner":"Lilly"}
+insert -t;Cats;-d;{"name":"Pretty Cat","age":1,"owner":"Barry"}
+
+select -t;Cats;-f;{"name":"MurMur"}
+select -t;Cats;-f;{"name":"Pretty Cat"}
+select -t;Cats;-f;{"age":"0"};--all
+select -t;Cats;-f;{"name":"Kitty"};--all;--counter
+
+
+insert-auto -t;Cats;--amount;30
+select -t;Cats;--all;--counter
+```
