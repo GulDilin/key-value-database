@@ -4,7 +4,7 @@ import traceback
 from dataclasses import dataclass
 from datetime import datetime
 from io import BufferedRandom, BufferedReader
-from typing import Type, TypeVar
+from typing import Any, Type, TypeVar
 
 from pydantic import BaseModel
 
@@ -206,12 +206,19 @@ class DatabaseCursor:
             updated.last_table_offset = offset
             self.update_db_meta(updated)
 
+    @staticmethod
+    def convert_db_type_value(table: types.MetaTable, key: str, value: Any) -> Any:
+        try:
+            return types.DB_TYPES_CONVERTERS[table.keys[key]](value)
+        except Exception:
+            raise ValueError(f'Value {value} is not compatible with table {table.name} key {key}')
+
     def preprocess_row_data(self, table: types.MetaTable, row: types.MetaRow) -> types.MetaRow:
         if row.data.keys() != table.keys.keys():
             raise ValueError(f'Row data {row.data} is not compatible with table schema {table.keys}')
         try:
             data = {
-                key: types.DB_TYPES_CONVERTERS[table.keys[key]](value)
+                key: self.convert_db_type_value(table, key, value)
                 for key, value in row.data.items()
             }
         except Exception:

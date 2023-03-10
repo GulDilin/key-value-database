@@ -39,6 +39,9 @@ class MetaDB(BaseModel):
     first_table_offset: int = 0
     last_table_offset: int = 0
 
+    def has_tables(self):
+        return self.first_table_offset > 0
+
 
 class MetaKey(BaseModel):
     name: str
@@ -60,10 +63,6 @@ class MetaTable(BaseModel):
         return self.prev_table_offset > 0
 
 
-class Row(BaseModel):
-    data: dict
-
-
 class MetaRow(BaseModel):
     data: dict
     next_row_offset: int = 0
@@ -74,3 +73,21 @@ class MetaRow(BaseModel):
 
     def has_prev(self):
         return self.prev_row_offset > 0
+
+
+class Table(BaseModel):
+    name: str
+    keys: dict[str, DbType]
+
+
+class Row(BaseModel):
+    data: dict
+
+
+FilterValue = list | str
+FilterPart = dict[str, FilterValue]
+Filter = list[FilterPart] | FilterPart
+
+
+class FilterRequest(BaseModel):
+    filter_data: Filter
